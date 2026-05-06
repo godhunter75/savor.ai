@@ -1,0 +1,20 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() { return request.auth != null; }
+    function incoming() { return request.resource.data; }
+
+    match /users/{userId} {
+      function isValidUser(data) {
+        return data.get('pantry', []).size() <= 400; // Allow up to 400 items
+      }
+
+      allow read: if isSignedIn() && request.auth.uid == userId;
+      allow write: if isSignedIn() && request.auth.uid == userId && isValidUser(incoming());
+    }
+  }
+}

@@ -1,0 +1,17 @@
+@import "tailwindcss";
+
+@theme {
+  --animate-shimmer: shimmer 1.5s infinite linear;
+  @keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(200%); }
+  }
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+.hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}

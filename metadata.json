@@ -1,0 +1,8 @@
+{
+  "name": "Savor.ai",
+  "description": "Generates a comprehensive Product Requirements Document (PRD), Architecture, and Implementation plan for Savor.ai, an AI-powered fridge scanner and recipe generator.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": []
+}

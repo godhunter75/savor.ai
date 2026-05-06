@@ -1,0 +1,29 @@
+{
+  "entities": {
+    "UserData": {
+      "title": "User Data",
+      "description": "User's pantry and stats",
+      "type": "object",
+      "properties": {
+        "pantry": {
+          "type": "array",
+          "items": { "type": "object" },
+          "description": "List of pantry items. Bounded size <= 400."
+        },
+        "impactStats": {
+          "type": "object",
+          "properties": {
+            "moneySaved": { "type": "number" },
+            "co2Saved": { "type": "number" }
+          }
+        }
+      }
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": { "$ref": "#/entities/UserData" },
+      "description": "Stores user's pantry and impact."
+    }
+  }
+}
