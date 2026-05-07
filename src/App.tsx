@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Camera, Search, Plus, ChefHat, Sparkles, Leaf, Trash2, X, RefreshCw, CheckCircle, Video, PlayCircle, ImagePlus, User as UserIcon, LogOut } from 'lucide-react';
+import { Camera, Search, Plus, ChefHat, Sparkles, Leaf, Trash2, X, RefreshCw, CheckCircle, Video, PlayCircle, ImagePlus, User as UserIcon, LogOut, MessageCircle, Send, CalendarRange, ShoppingCart, ExternalLink, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { GoogleGenAI } from '@google/genai';
 import { initializeApp } from 'firebase/app';
@@ -17,7 +17,7 @@ const provider = new GoogleAuthProvider();
 export const signInWithGoogle = () => signInWithPopup(auth, provider);
 
 // Initialize Gemini API
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "AIzaSyAdEaIxkb5j-_iKwvQ9O3So18q0KBQLvEU" });
+const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY || "AIzaSyAdEaIxkb5j-_iKwvQ9O3So18q0KBQLvEU" });
 
 enum OperationType {
   CREATE = 'create',
@@ -92,7 +92,7 @@ type Recipe = {
 };
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'fridge' | 'recipes' | 'impact'>('fridge');
+  const [activeTab, setActiveTab] = useState<'fridge' | 'recipes' | 'mealplan' | 'chat' | 'impact'>('fridge');
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -236,17 +236,20 @@ export default function App() {
               className="flex-1 flex flex-col min-h-full"
             >
               {activeTab === 'fridge' && <FridgeScreen pantry={activePantry} setPantry={setPantry} />}
+              {activeTab === 'mealplan' && <MealPlanScreen pantry={activePantry} />}
               {activeTab === 'recipes' && <RecipesScreen pantry={activePantry} impactStats={impactStats} setImpactStats={setImpactStats} pantryList={pantry} setPantry={setPantry} />}
+              {activeTab === 'chat' && <ChatScreen pantry={activePantry} />}
               {activeTab === 'impact' && <ImpactScreen stats={impactStats} />}
             </motion.div>
           </AnimatePresence>
         </div>
 
         {/* Bottom Navigation */}
-        <nav className="shrink-0 w-full bg-white/80 backdrop-blur-xl border-t border-slate-200/50 flex justify-around items-center p-3 pb-8 z-[90] shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
+        <nav className="shrink-0 w-full bg-white/80 backdrop-blur-xl border-t border-slate-200/50 flex justify-around items-center p-3 pb-8 z-[90] shadow-[0_-10px_40px_rgba(0,0,0,0.05)] overflow-x-auto text-xs sm:text-base">
           <NavButton active={activeTab === 'fridge'} onClick={() => setActiveTab('fridge')} icon={Search} label="Fridge" />
+          <NavButton active={activeTab === 'mealplan'} onClick={() => setActiveTab('mealplan')} icon={CalendarRange} label="Meal Plan" />
           <NavButton active={activeTab === 'recipes'} onClick={() => setActiveTab('recipes')} icon={ChefHat} label="Recipes" />
-          <NavButton active={activeTab === 'impact'} onClick={() => setActiveTab('impact')} icon={Leaf} label="Impact" />
+          <NavButton active={activeTab === 'chat'} onClick={() => setActiveTab('chat')} icon={MessageCircle} label="Chef AI" />
         </nav>
       </div>
     </div>
@@ -272,6 +275,190 @@ function NavButton({ active, onClick, icon: Icon, label }: any) {
   );
 }
 
+function MealPlanScreen({ pantry }: { pantry: Ingredient[] }) {
+  const [mealPlan, setMealPlan] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+
+  const generateMealPlan = async () => {
+    setLoading(true);
+    try {
+      const pantryNames = pantry.map(i => i.name).join(", ");
+      const response = await ai.models.generateContent({
+        model: 'gemini-3-flash-preview',
+        contents: [
+          { role: 'user', parts: [{ text: `Generate a 3-day meal plan (breakfast, lunch, dinner) using mainly these ingredients: ${pantryNames}. Provide output as a JSON object with this structure: { "days": [ { "day": 1, "meals": { "breakfast": "...", "lunch": "...", "dinner": "..." } } ] }. Do not include any other text or markdown block formatting.` }] }
+        ]
+      });
+      const text = response.text || "{}";
+      const cleaned = text.replace(/```json/g, '').replace(/```/g, '').trim();
+      setMealPlan(JSON.parse(cleaned));
+    } catch (err) {
+      console.error(err);
+      alert("Failed to generate meal plan. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="p-6 overflow-y-auto pb-24">
+      <header className="mb-6">
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
+          AI Meal Planner <CalendarRange className="w-5 h-5 text-emerald-500" />
+        </h1>
+        <p className="text-slate-500 text-sm mt-1">Get a personalized meal plan based on what's in your fridge.</p>
+      </header>
+
+      {!mealPlan ? (
+        <div className="flex flex-col items-center justify-center p-12 text-center bg-white rounded-3xl shadow-sm border border-slate-100">
+          <div className="w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center mb-4">
+            <Sparkles className="w-8 h-8 text-emerald-500" />
+          </div>
+          <h2 className="text-lg font-semibold text-slate-800 mb-2">Ready to plan your week?</h2>
+          <p className="text-slate-500 text-sm mb-6 max-w-[250px]">We'll generate a 3-day meal plan minimizing food waste.</p>
+          <button 
+            onClick={generateMealPlan}
+            disabled={loading || pantry.length === 0}
+            className="bg-slate-900 text-white px-6 py-3 rounded-full font-medium shadow-md shadow-slate-900/20 active:scale-95 transition-all w-full md:w-auto disabled:opacity-50"
+          >
+            {loading ? 'Generating...' : (pantry.length === 0 ? 'Add ingredients first' : 'Generate Plan')}
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {mealPlan.days?.map((day: any, i: number) => (
+            <div key={i} className="bg-white p-5 rounded-3xl shadow-sm border border-slate-100">
+              <h3 className="font-bold text-lg border-b border-slate-100 pb-3 mb-4 text-emerald-800">Day {day.day}</h3>
+              <div className="space-y-4">
+                <div className="bg-slate-50 p-4 rounded-2xl">
+                  <div className="text-xs font-bold tracking-wider text-slate-400 uppercase mb-1">Breakfast</div>
+                  <div className="text-slate-800 font-medium">{day.meals.breakfast}</div>
+                </div>
+                <div className="bg-slate-50 p-4 rounded-2xl">
+                  <div className="text-xs font-bold tracking-wider text-slate-400 uppercase mb-1">Lunch</div>
+                  <div className="text-slate-800 font-medium">{day.meals.lunch}</div>
+                </div>
+                <div className="bg-slate-50 p-4 rounded-2xl">
+                  <div className="text-xs font-bold tracking-wider text-slate-400 uppercase mb-1">Dinner</div>
+                  <div className="text-slate-800 font-medium">{day.meals.dinner}</div>
+                </div>
+              </div>
+            </div>
+          ))}
+          <button 
+             onClick={generateMealPlan}
+             disabled={loading}
+             className="w-full bg-slate-100 text-slate-700 py-4 rounded-2xl font-bold flex items-center justify-center gap-2 mt-4 hover:bg-slate-200"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            Regenerate Plan
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ChatScreen({ pantry }: { pantry: Ingredient[] }) {
+  const [messages, setMessages] = useState<{role: 'user' | 'model', content: string}[]>([
+    { role: 'model', content: "Hello! I'm Chef Savor. Ask me about flavour pairings, cooking techniques, or substituting ingredients!" }
+  ]);
+  const [input, setInput] = useState("");
+  const [isTyping, setIsTyping] = useState(false);
+  const endRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  const sendMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!input.trim() || isTyping) return;
+
+    const userMessage = input;
+    setInput("");
+    setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+    setIsTyping(true);
+
+    try {
+      const pantryNames = pantry.map(i => i.name).join(", ");
+      
+      const historyMsg = messages.map(m => {
+          return { role: m.role, parts: [{ text: m.content }] };
+      });
+      
+      const response = await ai.models.generateContent({
+        model: 'gemini-3-flash-preview',
+        contents: [
+            ...historyMsg,
+            { role: 'user', parts: [{ text: `User request: ${userMessage}. Context: The user currently has these items in their fridge: ${pantryNames}. You are an expert AI Chef named Chef Savor. Give a brief, helpful, and creative response. Keep it conversational and concise.` }] }
+        ]
+      });
+
+      setMessages(prev => [...prev, { role: 'model', content: response.text || "Sorry, I couldn't process that." }]);
+    } catch (err: any) {
+      console.error(err);
+      if (err.message && (err.message.includes('429') || err.message.includes('quota'))) {
+          setMessages(prev => [...prev, { role: 'model', content: "My kitchen brain is a bit overwhelmed right now (Quota exceeded). Please try again soon!" }]);
+      } else {
+          setMessages(prev => [...prev, { role: 'model', content: "Oops, my kitchen brain froze. Please try again later!" }]);
+      }
+    } finally {
+      setIsTyping(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col h-[calc(100vh-100px)] bg-slate-50 relative -mx-2 px-2 pb-6">
+      <header className="p-6 pb-2 shrink-0 bg-transparent z-10 w-full flex-col">
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
+          Chef Chat <Sparkles className="w-5 h-5 text-emerald-500" />
+        </h1>
+        <p className="text-slate-500 text-sm">Ask about pairings, techniques, or tips!</p>
+      </header>
+      
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {messages.map((msg, idx) => (
+          <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+            <div className={`max-w-[85%] rounded-2xl p-4 ${msg.role === 'user' ? 'bg-emerald-600 text-white rounded-br-none shadow-md shadow-emerald-600/30' : 'bg-white text-slate-800 border border-slate-200 shadow-sm rounded-bl-none'}`}>
+              <p className="text-sm font-medium leading-relaxed">{msg.content}</p>
+            </div>
+          </div>
+        ))}
+        {isTyping && (
+           <div className="flex justify-start">
+             <div className="bg-white border border-slate-200 shadow-sm rounded-2xl rounded-bl-none p-4 flex gap-1.5 items-center h-12">
+               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-bounce" style={{ animationDelay: '0ms' }} />
+               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-bounce" style={{ animationDelay: '150ms' }} />
+               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+             </div>
+           </div>
+        )}
+        <div ref={endRef} className="h-4" />
+      </div>
+
+      <div className="p-4 bg-white border-t border-slate-100 shrink-0 shadow-[0_-10px_20px_rgba(0,0,0,0.02)] rounded-3xl mx-2 mb-2 relative z-20">
+        <form onSubmit={sendMessage} className="flex gap-2">
+          <input 
+            type="text" 
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            placeholder="Ask Chef Savor..." 
+            className="flex-1 bg-slate-50 rounded-xl px-4 py-3 focus:outline-none ring-1 ring-slate-200 focus:ring-2 focus:ring-emerald-500 transition-all font-medium text-slate-800 placeholder-slate-400"
+          />
+          <button 
+            type="submit" 
+            disabled={!input.trim() || isTyping}
+            className="bg-slate-900 text-white w-12 rounded-xl flex items-center justify-center hover:bg-slate-800 disabled:opacity-50 disabled:active:scale-100 active:scale-95 transition-all shadow-lg"
+          >
+            <Send className="w-5 h-5 -ml-1" />
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // SCREENS
 // ---------------------------------------------------------------------------
@@ -280,6 +467,8 @@ function FridgeScreen({ pantry, setPantry }: { pantry: Ingredient[], setPantry: 
   const [isScanning, setIsScanning] = useState(false);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [newIngredientName, setNewIngredientName] = useState("");
+  const [newIngredientQuantity, setNewIngredientQuantity] = useState("");
+  const [pendingIngredients, setPendingIngredients] = useState<Ingredient[] | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -291,13 +480,14 @@ function FridgeScreen({ pantry, setPantry }: { pantry: Ingredient[], setPantry: 
     const newItem: Ingredient = {
       id: crypto.randomUUID(),
       name: newIngredientName.trim(),
-      quantity: "1",
+      quantity: newIngredientQuantity.trim() || "1",
       addedAt: Date.now(),
       status: 'ACTIVE'
     };
     
     setPantry((prev: Ingredient[]) => [newItem, ...prev]);
     setNewIngredientName("");
+    setNewIngredientQuantity("");
   };
 
   const openCamera = async () => {
@@ -349,7 +539,7 @@ Do not include any other text or markdown formatting.` },
         status: 'ACTIVE'
       }));
 
-      setPantry((prev: Ingredient[]) => [...newItems, ...prev]);
+      setPendingIngredients(newItems);
     } catch (err: any) {
       console.error(err);
       const msg = err.message || JSON.stringify(err);
@@ -444,22 +634,33 @@ Do not include any other text or markdown formatting.` },
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         onSubmit={addManualItem} 
-        className="mb-10 flex gap-2 p-2 bg-white rounded-2xl shadow-sm border border-slate-100 relative focus-within:ring-2 focus-within:ring-emerald-500 focus-within:border-transparent transition-all"
+        className="mb-10 flex gap-2 p-2 bg-white rounded-2xl shadow-sm border border-slate-100 flex-col sm:flex-row relative transition-all"
       >
-        <div className="flex-1 flex items-center pl-3">
-          <Search className="w-5 h-5 text-slate-400 mr-2" />
-          <input 
-            type="text" 
-            placeholder="Add an ingredient manually..." 
-            value={newIngredientName}
-            onChange={(e) => setNewIngredientName(e.target.value)}
-            className="w-full bg-transparent text-slate-800 placeholder-slate-400 focus:outline-none py-2 font-medium"
-          />
+        <div className="flex-1 flex gap-2 w-full">
+            <div className="flex-[2] flex items-center pl-3 bg-slate-50 rounded-xl focus-within:ring-2 focus-within:ring-emerald-500 transition-all">
+              <Search className="w-5 h-5 text-slate-400 mr-2" />
+              <input 
+                type="text" 
+                placeholder="Add an ingredient..." 
+                value={newIngredientName}
+                onChange={(e) => setNewIngredientName(e.target.value)}
+                className="w-full bg-transparent text-slate-800 placeholder-slate-400 focus:outline-none py-3 font-medium min-w-0"
+              />
+            </div>
+            <div className="flex-1 flex items-center px-3 bg-slate-50 rounded-xl focus-within:ring-2 focus-within:ring-emerald-500 transition-all">
+              <input 
+                type="text" 
+                placeholder="Qty..." 
+                value={newIngredientQuantity}
+                onChange={(e) => setNewIngredientQuantity(e.target.value)}
+                className="w-full bg-transparent text-slate-800 placeholder-slate-400 focus:outline-none py-3 font-medium min-w-0 text-center sm:text-left"
+              />
+            </div>
         </div>
         <button 
           type="submit"
           disabled={!newIngredientName.trim()}
-          className="bg-slate-900 text-white w-12 h-12 rounded-xl hover:bg-slate-800 disabled:bg-slate-200 disabled:text-slate-400 transition-colors flex items-center justify-center active:scale-95"
+          className="bg-slate-900 text-white sm:w-16 h-12 rounded-xl hover:bg-slate-800 disabled:bg-slate-200 disabled:text-slate-400 transition-colors flex items-center justify-center active:scale-95 w-full sm:w-auto"
         >
           <Plus className="w-6 h-6" />
         </button>
@@ -504,6 +705,106 @@ Do not include any other text or markdown formatting.` },
           </div>
         )}
       </div>
+
+      {/* Review Scan Modal */}
+      {createPortal(
+        <AnimatePresence>
+          {pendingIngredients && (
+            <motion.div 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-end sm:items-center justify-center p-4 sm:p-6 pb-20 sm:pb-6"
+            >
+              <motion.div 
+                initial={{ y: 100, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: 100, opacity: 0 }}
+                className="bg-white rounded-[2rem] w-full max-w-lg shadow-2xl flex flex-col max-h-[85vh] overflow-hidden"
+              >
+                <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                  <div>
+                    <h2 className="text-xl font-bold tracking-tight text-slate-900">Review Scan</h2>
+                    <p className="text-sm text-slate-500">Confirm detected ingredients.</p>
+                  </div>
+                  <button 
+                    onClick={() => setPendingIngredients(null)} 
+                    className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm border border-slate-200 hover:bg-slate-50 transition-colors"
+                  >
+                    <X className="w-5 h-5 text-slate-400" />
+                  </button>
+                </div>
+                
+                <div className="p-4 overflow-y-auto flex-1 bg-slate-50/50">
+                  <div className="space-y-3">
+                    {pendingIngredients.length === 0 ? (
+                       <div className="text-center p-8 text-slate-500">No ingredients detected. Please try again.</div>
+                    ) : (
+                       pendingIngredients.map((item, idx) => (
+                         <div key={item.id} className="flex gap-2 items-center bg-white p-3 rounded-2xl shadow-sm border border-slate-200 group">
+                            <div className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-sm shrink-0">
+                              {idx + 1}
+                            </div>
+                            <div className="flex-1 flex gap-2">
+                              <input 
+                                className="flex-[2] bg-slate-50 rounded-lg px-3 py-2 text-sm font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-emerald-500 border border-transparent transition-all min-w-0" 
+                                value={item.name} 
+                                onChange={(e) => {
+                                  const newItems = [...pendingIngredients];
+                                  newItems[idx].name = e.target.value;
+                                  setPendingIngredients(newItems);
+                                }} 
+                              />
+                              <input 
+                                className="flex-[1] bg-slate-50 rounded-lg px-3 py-2 text-sm font-semibold text-slate-500 outline-none focus:ring-2 focus:ring-emerald-500 border border-transparent transition-all min-w-0 text-center md:text-left" 
+                                value={item.quantity} 
+                                onChange={(e) => {
+                                  const newItems = [...pendingIngredients];
+                                  newItems[idx].quantity = e.target.value;
+                                  setPendingIngredients(newItems);
+                                }} 
+                              />
+                            </div>
+                            <button 
+                              onClick={() => {
+                                  const newItems = [...pendingIngredients];
+                                  newItems.splice(idx, 1);
+                                  setPendingIngredients(newItems);
+                              }}
+                              className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors active:scale-95 shrink-0"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                         </div>
+                       ))
+                    )}
+                  </div>
+                </div>
+                
+                <div className="p-6 bg-white border-t border-slate-100 flex gap-3">
+                  <button 
+                    onClick={() => setPendingIngredients(null)}
+                    className="flex-1 py-3.5 rounded-2xl font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 active:scale-95 transition-all"
+                  >
+                    Discard
+                  </button>
+                  <button 
+                     onClick={() => {
+                       setPantry((prev: Ingredient[]) => [...pendingIngredients, ...prev]);
+                       setPendingIngredients(null);
+                     }}
+                     disabled={pendingIngredients.length === 0}
+                     className="flex-[2] py-3.5 rounded-2xl font-bold text-white bg-emerald-600 hover:bg-emerald-700 active:scale-95 transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50 flex justify-center items-center gap-2"
+                  >
+                    <CheckCircle className="w-5 h-5" /> Add to Fridge
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
 
       {/* Camera Modal */}
       {createPortal(
