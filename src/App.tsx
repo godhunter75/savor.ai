@@ -20,7 +20,7 @@ export const signInWithGoogle = () => signInWithPopup(auth, provider);
 let aiClient: GoogleGenAI | null = null;
 const getAiClient = () => {
   if (!aiClient) {
-    const key = process.env.GEMINI_API_KEY || import.meta.env.VITE_GEMINI_API_KEY || "AIzaSyBgPKo0jVPUg5nTwFmP_jQZ-dK0z7sLQSg";
+    const key = process.env.GEMINI_API_KEY || import.meta.env.VITE_GEMINI_API_KEY;
     if (!key) throw new Error("API key is not configured. Add it in AI Studio settings.");
     aiClient = new GoogleGenAI({ apiKey: key });
   }
@@ -145,8 +145,8 @@ export default function App() {
 
   if (authLoading) {
     return (
-      <div className="bg-black min-h-screen flex justify-center text-slate-900 font-sans">
-        <div className="w-full max-w-md bg-slate-50 h-screen flex flex-col justify-center items-center">
+      <div className="bg-[#0f1115] min-h-screen flex justify-center items-center text-slate-900 font-sans p-0 sm:p-8">
+        <div className="w-full max-w-[400px] bg-[#FAF9F6] h-screen sm:h-[800px] sm:rounded-[40px] flex flex-col justify-center items-center shadow-2xl sm:border-[12px] sm:border-slate-800 relative overflow-hidden">
           <RefreshCw className="w-8 h-8 animate-spin text-emerald-600 mb-4" />
           <p className="text-slate-500 font-medium">Loading Savor...</p>
         </div>
@@ -156,17 +156,23 @@ export default function App() {
 
   if (!user) {
     return (
-      <div className="bg-black min-h-screen flex justify-center text-slate-900 font-sans">
-        <div className="w-full max-w-md bg-slate-50 h-screen flex flex-col justify-center items-center px-6 relative overflow-hidden">
+      <div className="bg-[#0f1115] min-h-screen flex justify-center items-center text-slate-900 font-sans p-0 sm:p-8 relative overflow-hidden">
+        {/* Background glow effects for the desktop page */}
+        <div className="hidden sm:block absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-emerald-500/20 rounded-full blur-[120px] pointer-events-none"></div>
+        <div className="hidden sm:block absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-sky-500/10 rounded-full blur-[120px] pointer-events-none"></div>
+
+        <div className="w-full max-w-[400px] bg-[#FAF9F6] h-screen sm:h-[800px] sm:rounded-[40px] flex flex-col justify-center items-center px-6 relative overflow-hidden shadow-2xl sm:border-[12px] sm:border-slate-800 sm:shadow-[0_0_80px_rgba(16,185,129,0.15)] ring-1 ring-white/10">
           <div className="absolute top-[-100px] right-[-100px] w-64 h-64 bg-emerald-200 rounded-full blur-3xl opacity-50 pointer-events-none"></div>
-          <div className="absolute bottom-[-100px] left-[-100px] w-64 h-64 bg-emerald-300 rounded-full blur-3xl opacity-50 pointer-events-none"></div>
+          <div className="absolute bottom-[-100px] left-[-100px] w-64 h-64 bg-emerald-300/40 rounded-full blur-3xl opacity-50 pointer-events-none"></div>
           
-          <div className="bg-white p-6 rounded-3xl shadow-xl w-full max-w-sm flex flex-col items-center z-10 text-center border border-slate-100">
-            <div className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-6">
-              <ChefHat className="w-10 h-10" />
+          <div className="bg-white/80 backdrop-blur-sm p-8 rounded-[32px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] w-full flex flex-col items-center z-10 text-center border border-white/50 relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-b from-white/60 to-white/10 pointer-events-none rounded-[32px]"></div>
+            
+            <div className="w-20 h-20 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mb-6 relative shadow-inner">
+              <ChefHat className="w-10 h-10 drop-shadow-sm" />
             </div>
-            <h1 className="text-3xl font-bold bg-gradient-to-br from-emerald-600 to-emerald-800 bg-clip-text text-transparent mb-2">Savor.ai</h1>
-            <p className="text-slate-500 mb-8 max-w-[250px]">Your personal AI sous-chef and fridge manager.</p>
+            <h1 className="text-4xl font-display font-medium tracking-tight bg-gradient-to-br from-slate-900 to-slate-600 bg-clip-text text-transparent mb-2">Savor.ai</h1>
+            <p className="text-slate-500 mb-8 max-w-[250px] font-sans text-sm leading-relaxed">Your personal AI sous-chef and fridge manager.</p>
             
             <button 
               onClick={() => signInWithGoogle().catch(e => { 
@@ -175,8 +181,9 @@ export default function App() {
                   alert("Failed to sign in: " + e.message); 
                 }
               })}
-              className="w-full py-4 px-6 bg-slate-900 hover:bg-black text-white rounded-2xl font-semibold shadow-lg shadow-slate-200 transition-all flex items-center justify-center gap-3 active:scale-[0.98]"
+              className="w-full relative group overflow-hidden py-4 px-6 bg-slate-900 hover:bg-black text-white rounded-2xl font-medium shadow-[0_8px_20px_rgba(0,0,0,0.12)] transition-all flex items-center justify-center gap-3 active:scale-[0.98]"
             >
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-in-out"></div>
               <svg className="w-5 h-5 bg-white rounded-full p-0.5" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.58c2.1-1.92 3.31-4.75 3.31-8.09z" />
                 <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
@@ -184,7 +191,7 @@ export default function App() {
                 <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
                 <path fill="none" d="M1 1h22v22H1z" />
               </svg>
-              Continue with Google
+              <span>Continue with Google</span>
             </button>
           </div>
         </div>
@@ -193,9 +200,14 @@ export default function App() {
   }
 
   return (
-    <div className="bg-black min-h-screen flex justify-center text-slate-900 font-sans">
-      {/* Mobile App Container */}
-      <div className="w-full max-w-md bg-slate-50 h-screen flex flex-col relative overflow-hidden shadow-2xl">
+    <div className="bg-[#0f1115] min-h-screen flex justify-center items-center text-slate-900 font-sans p-0 sm:p-8 relative overflow-hidden">
+      {/* Background glow effects for the desktop page */}
+      <div className="hidden sm:block absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-emerald-500/20 rounded-full blur-[120px] pointer-events-none"></div>
+      <div className="hidden sm:block absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-sky-500/10 rounded-full blur-[120px] pointer-events-none"></div>
+
+      {/* Mobile App Container (Mockup frame) */}
+      <div className="w-full max-w-[400px] bg-[#FAF9F6] h-screen sm:h-[800px] flex flex-col relative overflow-hidden shadow-2xl sm:rounded-[40px] sm:border-[12px] sm:border-slate-800 sm:shadow-[0_0_80px_rgba(16,185,129,0.15)] ring-1 ring-white/10 z-10">
+
         {/* Render a sticky profile/sign out button */}
         <div className="absolute top-4 right-4 z-[60]">
           <button 
@@ -253,7 +265,7 @@ export default function App() {
         </div>
 
         {/* Bottom Navigation */}
-        <nav className="shrink-0 w-full bg-white/80 backdrop-blur-xl border-t border-slate-200/50 flex justify-around items-center p-3 pb-8 z-[90] shadow-[0_-10px_40px_rgba(0,0,0,0.05)] overflow-x-auto text-xs sm:text-base">
+        <nav className="shrink-0 w-full bg-white/80 backdrop-blur-xl border-t border-slate-200/50 flex justify-around items-center p-3 pb-8 sm:pb-6 z-[90] shadow-[0_-10px_40px_rgba(0,0,0,0.05)] overflow-x-auto text-xs sm:text-base">
           <NavButton active={activeTab === 'fridge'} onClick={() => setActiveTab('fridge')} icon={Search} label="Fridge" />
           <NavButton active={activeTab === 'mealplan'} onClick={() => setActiveTab('mealplan')} icon={CalendarRange} label="Meal Plan" />
           <NavButton active={activeTab === 'recipes'} onClick={() => setActiveTab('recipes')} icon={ChefHat} label="Recipes" />
@@ -300,9 +312,14 @@ function MealPlanScreen({ pantry }: { pantry: Ingredient[] }) {
       const text = response.text || "{}";
       const cleaned = text.replace(/```json/g, '').replace(/```/g, '').trim();
       setMealPlan(JSON.parse(cleaned));
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert("Failed to generate meal plan. Please try again.");
+      const msg = err.message || JSON.stringify(err);
+      if (msg.includes('429') || msg.includes('quota') || msg.includes('RESOURCE_EXHAUSTED')) {
+        alert("The AI's quota is currently exhausted. Please try again later or provide your own API key.");
+      } else {
+        alert("Failed to generate meal plan: " + msg);
+      }
     } finally {
       setLoading(false);
     }
