@@ -20,7 +20,7 @@ export const signInWithGoogle = () => signInWithPopup(auth, provider);
 let aiClient: GoogleGenAI | null = null;
 const getAiClient = () => {
   if (!aiClient) {
-    const key = process.env.GEMINI_API_KEY || import.meta.env.VITE_GEMINI_API_KEY;
+    const key = process.env.GEMINI_API_KEY || import.meta.env.VITE_GEMINI_API_KEY || "AIzaSyBgPKo0jVPUg5nTwFmP_jQZ-dK0z7sLQSg";
     if (!key) throw new Error("API key is not configured. Add it in AI Studio settings.");
     aiClient = new GoogleGenAI({ apiKey: key });
   }
