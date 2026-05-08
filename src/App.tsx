@@ -20,7 +20,8 @@ export const signInWithGoogle = () => signInWithPopup(auth, provider);
 let aiClient: GoogleGenAI | null = null;
 const getAiClient = () => {
   if (!aiClient) {
-    const key = process.env.GEMINI_API_KEY;
+    // Safely access process.env.GEMINI_API_KEY or fallback to import.meta.env to prevent Vite blank screen errors if process is undefined
+    const key = (typeof process !== 'undefined' && process.env ? process.env.GEMINI_API_KEY : undefined) || import.meta.env.VITE_GEMINI_API_KEY;
     if (!key) throw new Error("API key is not configured. Add it in AI Studio settings.");
     aiClient = new GoogleGenAI({ apiKey: key });
   }
