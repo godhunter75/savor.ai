@@ -17,7 +17,15 @@ const provider = new GoogleAuthProvider();
 export const signInWithGoogle = () => signInWithPopup(auth, provider);
 
 // Initialize Gemini API
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+let aiClient: GoogleGenAI | null = null;
+const getAiClient = () => {
+  if (!aiClient) {
+    const key = process.env.GEMINI_API_KEY;
+    if (!key) throw new Error("API key is not configured. Add it in AI Studio settings.");
+    aiClient = new GoogleGenAI({ apiKey: key });
+  }
+  return aiClient;
+};
 
 enum OperationType {
   CREATE = 'create',
@@ -283,7 +291,7 @@ function MealPlanScreen({ pantry }: { pantry: Ingredient[] }) {
     setLoading(true);
     try {
       const pantryNames = pantry.map(i => i.name).join(", ");
-      const response = await ai.models.generateContent({
+      const response = await getAiClient().models.generateContent({
         model: 'gemini-3-flash-preview',
         contents: [
           { role: 'user', parts: [{ text: `Generate a 3-day meal plan (breakfast, lunch, dinner) using mainly these ingredients: ${pantryNames}. Provide output as a JSON object with this structure: { "days": [ { "day": 1, "meals": { "breakfast": "...", "lunch": "...", "dinner": "..." } } ] }. Do not include any other text or markdown block formatting.` }] }
@@ -387,7 +395,7 @@ function ChatScreen({ pantry }: { pantry: Ingredient[] }) {
           return { role: m.role, parts: [{ text: m.content }] };
       });
       
-      const response = await ai.models.generateContent({
+      const response = await getAiClient().models.generateContent({
         model: 'gemini-3-flash-preview',
         contents: [
             ...historyMsg,
@@ -514,7 +522,7 @@ function FridgeScreen({ pantry, setPantry }: { pantry: Ingredient[], setPantry: 
   const processImageBase64 = async (base64Image: string) => {
     setIsScanning(true);
     try {
-      const response = await ai.models.generateContent({
+      const response = await getAiClient().models.generateContent({
         model: 'gemini-3-flash-preview',
         contents: [
           { role: 'user', parts: [
@@ -856,7 +864,7 @@ function RecipesScreen({ pantry, impactStats, setImpactStats, pantryList, setPan
     
     try {
       const pantryNames = pantry.map(i => i.name).join(", ");
-      const response = await ai.models.generateContent({
+      const response = await getAiClient().models.generateContent({
         model: 'gemini-3-flash-preview',
         contents: [{ role: 'user', parts: [{ text: `
 You are Savor.ai, a master chef app. Generate exactly ONE recipe based on the user's pantry.
