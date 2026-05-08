@@ -17,7 +17,7 @@ const provider = new GoogleAuthProvider();
 export const signInWithGoogle = () => signInWithPopup(auth, provider);
 
 // Initialize Gemini API
-const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY || "AIzaSyAdEaIxkb5j-_iKwvQ9O3So18q0KBQLvEU" });
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 enum OperationType {
   CREATE = 'create',
